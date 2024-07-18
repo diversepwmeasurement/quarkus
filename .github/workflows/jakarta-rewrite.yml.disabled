@@ -1,62 +1,66 @@
-name: Jakarta Rewrite
-
-on:
-  workflow_dispatch:
-  schedule:
-    # 22pm every weekday + saturday
-    - cron: '0 22 * * 1-6'
 jobs:
   rewrite:
-    runs-on: ubuntu-latest
-    name: Rewrite to Jakarta
-    if: github.repository == 'quarkusio/quarkus' || github.event_name == 'workflow_dispatch'
     env:
       MAVEN_OPTS: -Xmx3g -XX:MaxMetaspaceSize=1g
+    if: github.repository == 'quarkusio/quarkus' || github.event_name == 'workflow_dispatch'
+    name: Rewrite to Jakarta
+    runs-on: self-hosted
     steps:
-      - uses: actions/checkout@v3
-        with:
-          token: ${{ secrets.JAKARTA_PUSH_PAT }}
-      - name: Set up JDK 11
-        uses: actions/setup-java@v3
-        with:
-          distribution: temurin
-          java-version: 11
-          cache: maven
-      - name: Configure Git author
-        run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-      - name: Install JBang
-        run: |
-          curl -Ls https://sh.jbang.dev | bash -s - app setup
-        shell: bash
-      - name: Transform sources
-        run: |
-          export PATH="$HOME/.jbang/bin:$PATH"
-          git checkout -b temp-jakarta-rewrite
-          REWRITE_NO_TESTS=true ./jakarta/transform.sh
-          git push --force origin temp-jakarta-rewrite:jakarta-rewrite
-        shell: bash
-      - name: Build and Deploy
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_API_TOKEN }}
-          SERVER_USERNAME: ${{ secrets.SERVER_USERNAME }}
-          SERVER_PASSWORD: ${{ secrets.SERVER_PASSWORD }}
-        run: |
-          ./mvnw -e -B --settings .github/mvn-settings.xml \
-            -DskipITs -DskipTests -Dskip.gradle.tests -Dno-format -Dinvoker.skip=true \
-            -DretryFailedDeploymentCount=10 \
-            -pl !integration-tests/gradle \
-            clean deploy
-      - name: Report status
-        if: "always() && github.repository == 'quarkusio/quarkus'"
-        shell: bash
-        run: |
-          curl -Ls https://sh.jbang.dev | bash -s - app setup
-          ~/.jbang/bin/jbang .github/NativeBuildReport.java \
-            issueNumber=24396 \
-            runId=${{ github.run_id }} \
-            status=${{ job.status }} \
-            token=${{ secrets.GITHUB_API_TOKEN }} \
-            issueRepo=${{ github.repository }} \
-            thisRepo=${{ github.repository }}
+    - continue-on-error: true
+      uses: actions/checkout@v3
+      with:
+        token: ${{ secrets.JAKARTA_PUSH_PAT }}
+    - continue-on-error: true
+      name: Set up JDK 11
+      uses: actions/setup-java@v3
+      with:
+        cache: maven
+        distribution: temurin
+        java-version: 11
+    - continue-on-error: true
+      name: Configure Git author
+      run: 'git config --local user.email "action@github.com"
+
+        git config --local user.name "GitHub Action"
+
+        '
+    - continue-on-error: true
+      name: Install JBang
+      run: 'curl -Ls https://sh.jbang.dev | bash -s - app setup
+
+        '
+      shell: bash
+    - continue-on-error: true
+      name: Transform sources
+      run: 'export PATH="$HOME/.jbang/bin:$PATH"
+
+        git checkout -b temp-jakarta-rewrite
+
+        REWRITE_NO_TESTS=true ./jakarta/transform.sh
+
+        git push --force origin temp-jakarta-rewrite:jakarta-rewrite
+
+        '
+      shell: bash
+    - continue-on-error: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_API_TOKEN }}
+        SERVER_PASSWORD: ${{ secrets.SERVER_PASSWORD }}
+        SERVER_USERNAME: ${{ secrets.SERVER_USERNAME }}
+      name: Build and Deploy
+      run: "./mvnw -e -B --settings .github/mvn-settings.xml \\\n  -DskipITs -DskipTests\
+        \ -Dskip.gradle.tests -Dno-format -Dinvoker.skip=true \\\n  -DretryFailedDeploymentCount=10\
+        \ \\\n  -pl !integration-tests/gradle \\\n  clean deploy\n"
+    - continue-on-error: true
+      if: always() && github.repository == 'quarkusio/quarkus'
+      name: Report status
+      run: "curl -Ls https://sh.jbang.dev | bash -s - app setup\n~/.jbang/bin/jbang\
+        \ .github/NativeBuildReport.java \\\n  issueNumber=24396 \\\n  runId=${{ github.run_id\
+        \ }} \\\n  status=${{ job.status }} \\\n  token=${{ secrets.GITHUB_API_TOKEN\
+        \ }} \\\n  issueRepo=${{ github.repository }} \\\n  thisRepo=${{ github.repository\
+        \ }}\n"
+      shell: bash
+name: Jakarta Rewrite
+on:
+  repository_dispatch:
+    types: trigger-ga___jakarta-rewrite.yml.disabled

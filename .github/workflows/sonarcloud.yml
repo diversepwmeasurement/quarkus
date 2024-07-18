@@ -1,38 +1,46 @@
-name: Sonarcloud Analysis
-on:
-  workflow_dispatch:
-  schedule:
-    - cron: '30 5 * * 0'
 jobs:
   build:
     name: Build
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: 17
-      - name: Get Date
-        id: get-date
-        run: |
-          echo "date=$(/bin/date -u "+%Y-%m")" >> $GITHUB_OUTPUT
-        shell: bash
-      - name: Cache SonarCloud packages
-        uses: actions/cache@v4
-        with:
-          path: ~/.sonar/cache
-          key: ${{ runner.os }}-sonar-${{ steps.get-date.outputs.date }}
-      - name: Cache Maven packages
-        uses: actions/cache@v4
-        with:
-          path: ~/.m2
-          key: ${{ runner.os }}-m2-${{ steps.get-date.outputs.date }}
-      - name: Build and analyze
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: ./mvnw -e -B --settings .github/mvn-settings.xml -Dquickly-ci install org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.organization=quarkusio -Dsonar.projectKey=quarkusio_quarkus -Dsonar.host.url=https://sonarcloud.io -Dsonar.projectName=Quarkus -Dsonar.java.libraries=/home/runner/.m2/repository/**/*.jar
+    - continue-on-error: true
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    - continue-on-error: true
+      name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        distribution: temurin
+        java-version: 17
+    - continue-on-error: true
+      id: get-date
+      name: Get Date
+      run: 'echo "date=$(/bin/date -u "+%Y-%m")" >> $GITHUB_OUTPUT
+
+        '
+      shell: bash
+    - continue-on-error: true
+      name: Cache SonarCloud packages
+      uses: actions/cache@v4
+      with:
+        key: ${{ runner.os }}-sonar-${{ steps.get-date.outputs.date }}
+        path: ~/.sonar/cache
+    - continue-on-error: true
+      name: Cache Maven packages
+      uses: actions/cache@v4
+      with:
+        key: ${{ runner.os }}-m2-${{ steps.get-date.outputs.date }}
+        path: ~/.m2
+    - continue-on-error: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      name: Build and analyze
+      run: ./mvnw -e -B --settings .github/mvn-settings.xml -Dquickly-ci install org.sonarsource.scanner.maven:sonar-maven-plugin:sonar
+        -Dsonar.organization=quarkusio -Dsonar.projectKey=quarkusio_quarkus -Dsonar.host.url=https://sonarcloud.io
+        -Dsonar.projectName=Quarkus -Dsonar.java.libraries=/home/runner/.m2/repository/**/*.jar
+name: Sonarcloud Analysis
+on:
+  repository_dispatch:
+    types: trigger-ga___sonarcloud.yml

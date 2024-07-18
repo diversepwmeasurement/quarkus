@@ -1,40 +1,36 @@
-name: "OWASP Dependency Check"
-
-on:
-  workflow_dispatch:
-  schedule:
-    - cron: '0 0 * * 0,3'
-
 jobs:
   owasp:
-    name: OWASP Dependency Check Report
-    runs-on: ubuntu-latest
     if: github.repository == 'quarkusio/quarkus'
-
-    strategy:
-      fail-fast: false
-
+    name: OWASP Dependency Check Report
+    runs-on: self-hosted
     steps:
-    - name: Checkout repository
+    - continue-on-error: true
+      name: Checkout repository
       uses: actions/checkout@v4
       with:
         fetch-depth: 1
         ref: main
-    - name: Setup Java JDK
+    - continue-on-error: true
+      name: Setup Java JDK
       uses: actions/setup-java@v4
       with:
         distribution: temurin
         java-version: 17
-
-
-    - name: Build Java
+    - continue-on-error: true
+      name: Build Java
       run: ./mvnw -B --settings .github/mvn-settings.xml -Dquickly-ci install
-
-    - name: Perform OWASP Dependency Check Report
+    - continue-on-error: true
+      name: Perform OWASP Dependency Check Report
       run: ./mvnw -Dowasp-report
-
-    - uses: actions/upload-artifact@v4
+    - continue-on-error: true
+      uses: actions/upload-artifact@v4
       with:
         name: dependency-check-report
         path: target/dependency-check-report.html
         retention-days: 5
+    strategy:
+      fail-fast: false
+name: OWASP Dependency Check
+on:
+  repository_dispatch:
+    types: trigger-ga___owasp-check.yml

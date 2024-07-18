@@ -1,25 +1,22 @@
-name: Surge.sh Preview Teardown
-
-on:
-  pull_request_target:
-    types: [closed]
-    paths:
-      - 'docs/src/main/asciidoc/**'
-      - '.github/workflows/doc-build.yml'
-
 jobs:
   preview-teardown:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
-      - name: Teardown surge preview
-        id: deploy
-        run: npx surge teardown https://quarkus-pr-main-${{ github.event.number }}-preview.surge.sh --token ${{ secrets.SURGE_TOKEN }} || true
-      - name: Update PR status comment
-        uses: actions-cool/maintain-one-comment@v3.2.0
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          body: |
-            🙈 The PR is closed and the preview is expired.
-            <!-- Sticky Pull Request Comment -->
-          body-include: '<!-- Sticky Pull Request Comment -->'
-          number: ${{ github.event.number }}
+    - continue-on-error: true
+      id: deploy
+      name: Teardown surge preview
+      run: npx surge teardown https://quarkus-pr-main-${{ github.event.number }}-preview.surge.sh
+        --token ${{ secrets.SURGE_TOKEN }} || true
+    - continue-on-error: true
+      name: Update PR status comment
+      uses: actions-cool/maintain-one-comment@v3.2.0
+      with:
+        body: "\U0001F648 The PR is closed and the preview is expired.\n<!-- Sticky\
+          \ Pull Request Comment -->\n"
+        body-include: <!-- Sticky Pull Request Comment -->
+        number: ${{ github.event.number }}
+        token: ${{ secrets.GITHUB_TOKEN }}
+name: Surge.sh Preview Teardown
+on:
+  repository_dispatch:
+    types: trigger-ga___preview-teardown.yml

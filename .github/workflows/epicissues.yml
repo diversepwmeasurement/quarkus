@@ -1,23 +1,22 @@
-name: "Epic issue lists"
-on:
-  issues:
-    types: [opened, edited, labeled]
-
 concurrency:
-  group: "workflow = ${{ github.workflow }}, ref = ${{ github.event.ref }}, issue = ${{ github.event.issue.id }}"
-  cancel-in-progress: ${{ github.event_name == 'issues' || github.repository != 'quarkusio/quarkus' }}
-
+  cancel-in-progress: ${{ github.event_name == 'issues' || github.repository != 'quarkusio/quarkus'
+    }}
+  group: workflow = ${{ github.workflow }}, ref = ${{ github.event.ref }}, issue =
+    ${{ github.event.issue.id }}
 jobs:
   autolabel:
     if: github.repository == 'quarkusio/quarkus'
-    runs-on: ubuntu-latest
     name: auto label
+    runs-on: self-hosted
     steps:
-#      - name: Debug Action
-#        uses: hmarr/debug-action@v1.0.0
-      - name: epicmaker
-        uses: docker://maxandersen/jbang-epic-maker
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_API_TOKEN }}
-          BOTNAME: quarkusbot
-          EPICLABEL: kind/epic
+    - continue-on-error: true
+      env:
+        BOTNAME: quarkusbot
+        EPICLABEL: kind/epic
+        GITHUB_TOKEN: ${{ secrets.GITHUB_API_TOKEN }}
+      name: epicmaker
+      uses: docker://maxandersen/jbang-epic-maker
+name: Epic issue lists
+on:
+  repository_dispatch:
+    types: trigger-ga___epicissues.yml
